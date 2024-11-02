@@ -7,7 +7,7 @@ apt-get install -y \
     libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2t64 libxi6 libxtst6 \
     makepasswd unzip \
     bedtools bwa tree samtools bcftools fastqc \
-    ttyd byobu ssh-import-id
+    ttyd byobu ssh-import-id certbot nginx python3-certbot-nginx
 
 byobu-enable
 # manually: byobu
@@ -18,7 +18,7 @@ adduser krab sudo
 adduser anastazie
 adduser anastazie sudo
 
-visudo  # Add NOPASSWD into the line `%sudo   ALL=(ALL:ALL) NOPASSWD:ALL`
+sed -i 's/^%sudo.*/%sudo   ALL=\(ALL:ALL\) NOPASSWD:ALL/' /etc/sudoers
 
 sudo -iu anastazie bash -c 'ssh-import-id gh:anastazie'
 sudo -iu krab bash -c 'ssh-import-id gh:crabhi'
@@ -26,7 +26,6 @@ sudo -iu krab bash -c 'ssh-import-id gh:crabhi'
 # Install conda
 CONDA_VERSION=2024.10-1
 curl https://repo.anaconda.com/archive/Anaconda3-${CONDA_VERSION}-Linux-x86_64.sh -o /srv/install-anaconda.sh
-PREFIX=/srv/anaconda bash "Anaconda3-${CONDA_VERSION}-Linux-x86_64.sh"
 
 USERS=(adela.danielova iva.kulichova jan.masek2 jana.cechova2 jana.novackova lubos.kanca lucie.cuchalova martina.sekowska martina.valisova michal.beran2 pavel.capek vlastimil.stenzl zbynek.dolejsi)
 
@@ -44,7 +43,7 @@ echo
 
 for u in krab anastazie "${USERS[@]}"; do
     sudo -u "$u" bash /srv/install-anaconda.sh -b -p /home/$u/anaconda3
-    su -l krab -c bash -c 'eval "$($HOME/anaconda3/bin/conda shell.bash hook)" && conda init && conda '
+    su -l "$u" -c bash -c 'eval "$($HOME/anaconda3/bin/conda shell.bash hook)" && conda init'
 done
 
 
@@ -79,6 +78,8 @@ curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_2.fa
 curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/006/SRR2584866/SRR2584866_1.fastq.gz
 curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/006/SRR2584866/SRR2584866_2.fastq.gz
 
+cd ~
+
 # wget https://figshare.com/ndownloader/files/14418248 -O sub.tar.gz
 # tar -xvzf sub.tar.gz
 # mv sub fastq
@@ -92,3 +93,15 @@ curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/006/SRR2584866/SRR2584866_2.fa
 # cd anastazie
 # MY_HOME=$(pwd)
 # cd
+
+certbot --accept-tos  -d skoleni-kup.sedlakovi.org --nginx
+
+cp nginx-site-default /etc/nginx/sites-available/default
+systemctl restart nginx
+
+cat > /etc/default/ttyd <<EOF
+# /etc/default/ttyd
+
+TTYD_OPTIONS="-i lo -W -p 7681 -O login"
+EOF
+systemctl restart ttyd
