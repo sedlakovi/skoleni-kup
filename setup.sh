@@ -12,8 +12,8 @@ apt-get install -y \
 byobu-enable
 # manually: byobu
 
-adduser krab
-adduser krab sudo
+adduser krab --gecos "" --disabled-password
+adduser krab sudo --gecos "" --disabled-password
 
 adduser anastazie
 adduser anastazie sudo
@@ -22,30 +22,6 @@ sed -i 's/^%sudo.*/%sudo   ALL=\(ALL:ALL\) NOPASSWD:ALL/' /etc/sudoers
 
 sudo -iu anastazie bash -c 'ssh-import-id gh:anastazie'
 sudo -iu krab bash -c 'ssh-import-id gh:crabhi'
-
-# Install conda
-CONDA_VERSION=2024.10-1
-curl https://repo.anaconda.com/archive/Anaconda3-${CONDA_VERSION}-Linux-x86_64.sh -o /srv/install-anaconda.sh
-
-USERS=(adela.danielova iva.kulichova jan.masek2 jana.cechova2 jana.novackova lubos.kanca lucie.cuchalova martina.sekowska martina.valisova michal.beran2 pavel.capek vlastimil.stenzl zbynek.dolejsi)
-
-for u in "${USERS[@]}"; do
-    PASS=$(makepasswd --chars=20)
-    adduser $u --gecos "" --disabled-password > /dev/null 2>&1
-    echo -e "${PASS}\n${PASS}\n" | passwd $u > /dev/null 2>&1
-
-    echo -e "$u\t$PASS"
-done
-
-echo
-echo "-------------------------"
-echo
-
-for u in krab anastazie "${USERS[@]}"; do
-    sudo -u "$u" bash /srv/install-anaconda.sh -b -p /home/$u/anaconda3
-    su -l "$u" -c bash -c 'eval "$($HOME/anaconda3/bin/conda shell.bash hook)" && conda init'
-done
-
 
 # Install Trimmomatic
 cd /srv
@@ -80,21 +56,34 @@ curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/006/SRR2584866/SRR2584866_2.fa
 
 cd ~
 
-# wget https://figshare.com/ndownloader/files/14418248 -O sub.tar.gz
-# tar -xvzf sub.tar.gz
-# mv sub fastq
-# rm sub.tar.gz
-# cd fastq/
-# for file in *.trim.sub.fastq; do mv "$file" "${file/.trim/}"; done
-# for file in *.sub.fastq; do mv "$file" "${file/.sub/}"; done
-# # Create my own home
-# cd
-# mkdir anastazie
-# cd anastazie
-# MY_HOME=$(pwd)
-# cd
+# Install conda
+CONDA_VERSION=2024.10-1
+curl https://repo.anaconda.com/archive/Anaconda3-${CONDA_VERSION}-Linux-x86_64.sh -o /srv/install-anaconda.sh
 
-certbot --accept-tos  -d skoleni-kup.sedlakovi.org --nginx
+USERS=(adeladanielova ivakulichova janmasek2 janacechova2 jananovackova luboskanca luciecuchalova martinasekowska martinavalisova michalberan2 pavelcapek vlastimilstenzl zbynekdolejsi)
+
+set +x
+for u in "${USERS[@]}"; do
+    PASS=$(makepasswd --chars=20)
+    adduser $u --gecos "" --disabled-password > /dev/null 2>&1
+    echo -e "${PASS}\n${PASS}\n" | passwd $u > /dev/null 2>&1
+
+    echo -e "$u\t$PASS"
+done
+
+echo
+echo "-------------------------"
+echo
+
+set -x
+
+for u in krab anastazie "${USERS[@]}"; do
+    sudo -u "$u" bash /srv/install-anaconda.sh -b -p /home/$u/anaconda3
+    su -l "$u" -c bash -c 'eval "$($HOME/anaconda3/bin/conda shell.bash hook)" && conda init'
+done
+
+
+certbot --agree-tos  -d skoleni-kup.sedlakovi.org --nginx --no-eff-mail -m filip+skolenikup@sedlakovi.org
 
 cp nginx-site-default /etc/nginx/sites-available/default
 systemctl restart nginx
