@@ -6,7 +6,7 @@ apt-get update
 apt-get install -y \
     libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2t64 libxi6 libxtst6 \
     makepasswd unzip \
-    bedtools bwa tree samtools bcftools fastqc \
+    bedtools bwa tree samtools bcftools fastqc tabix  \
     ttyd byobu ssh-import-id certbot nginx python3-certbot-nginx
 
 byobu-enable
@@ -23,12 +23,6 @@ sed -i 's/^%sudo.*/%sudo   ALL=\(ALL:ALL\) NOPASSWD:ALL/' /etc/sudoers
 sudo -iu anastazie bash -c 'ssh-import-id gh:anastazie'
 sudo -iu krab bash -c 'ssh-import-id gh:crabhi'
 
-# Install Trimmomatic
-cd /srv
-curl -LO https://github.com/usadellab/Trimmomatic/files/5854859/Trimmomatic-0.39.zip
-unzip Trimmomatic-0.39.zip
-rm Trimmomatic-0.39.zip
-echo 'alias trimmomatic="java -jar /srv/Trimmomatic-0.39/trimmomatic-0.39.jar"' > /etc/profile.d/trimmomatic.sh
 
 # Download snakemake example data
 git clone https://github.com/snakemake/snakemake-tutorial-data.git
@@ -44,15 +38,35 @@ unzip shell-lesson-data.zip
 rm shell-lesson-data.zip
 mv shell-lesson-data data-shell
 
+# Download reference hg38 FASTA
+sudo mkdir -p /srv/resources
+cd /srv/resources
+sudo curl -O https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
+sudo gunzip hg19.fa.gz
+sudo bgzip hg19.fa.gz
+
+# Create BWA index
+sudo bwa index /srv/resources/hg19.fa.gz
+sudo samtools faidx /srv/resources/hg19.fa.gz
+
+# Download bigBed to annotate VCF files with rsID
+sudo curl -O https://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigBedToBed
+sudo chmod +x bigBedToBed
+sudo curl -O https://hgdownload.soe.ucsc.edu/gbdb/hg19/snp/dbSnp155Common.bb
+sudo ./bigBedToBed dbSnp155Common.bb dbSnp155Common.bed
+sudoo rm dbSnp155Common.bb
+
+# Download CODIS bed file
+sudo wget https://github.com/AnJingwd/STRsearch/raw/refs/heads/master/example/ref_test.bed
+sudo sed -i '1d' ref_test.bed
+
 # Download example FASTQ
-mkdir fastq
-cd fastq
-curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/004/SRR2589044/SRR2589044_1.fastq.gz
-curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/004/SRR2589044/SRR2589044_2.fastq.gz
-curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_1.fastq.gz
-curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_2.fastq.gz
-curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/006/SRR2584866/SRR2584866_1.fastq.gz
-curl -O ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/006/SRR2584866/SRR2584866_2.fastq.gz
+mkdir data
+cd data
+mkdir reads
+cd reads
+curl -O https://raw.githubusercontent.com/AnJingwd/STRsearch/refs/heads/master/example/test_data/test_R2.fastq
+curl -O https://raw.githubusercontent.com/AnJingwd/STRsearch/refs/heads/master/example/test_data/test_R1.fastq
 
 cd ~
 
