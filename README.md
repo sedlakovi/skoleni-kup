@@ -1,1 +1,1 @@
-Skripty ke Kurzu bioinformatickeho skoleni
+Skripty ke Kurzu bioinformaticke analyzy
