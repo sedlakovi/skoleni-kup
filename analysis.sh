@@ -11,6 +11,7 @@ VCF_DIR=~/str_project/data/vcf
 STR_DIR=~/str_project/data/str_calls
 
 # Create those directories if they do not exist
+cd
 mkdir -p $FASTQ_DIR
 mkdir -p $TRIMMED_FASTQ_DIR
 mkdir -p $BAM_DIR
